@@ -7,28 +7,77 @@ import {
   Bell, 
   Menu,
   X,
-  Search
+  Search,
+  Edit,
+  Save,
+  Trash
 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingStudent, setEditingStudent] = useState<number | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    grade: '',
+    attendance: '',
+    courses: [] as string[]
+  });
 
-  const students = [
+  const [students, setStudents] = useState([
     { id: 1, name: "John Doe", grade: "10th", attendance: "95%", courses: ["Math", "Science", "English"] },
     { id: 2, name: "Jane Smith", grade: "11th", attendance: "98%", courses: ["History", "Physics", "Literature"] },
     { id: 3, name: "Mike Johnson", grade: "10th", attendance: "92%", courses: ["Chemistry", "Biology", "French"] },
-  ];
+  ]);
 
-  const announcements = [
+  const [announcements, setAnnouncements] = useState([
     { id: 1, title: "Parent-Teacher Meeting", date: "2024-03-20", content: "Annual parent-teacher meeting scheduled next week." },
     { id: 2, title: "Sports Day", date: "2024-03-25", content: "Annual sports day celebration next month." },
-  ];
+  ]);
 
   const filteredStudents = students.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleEditClick = (student: any) => {
+    setEditingStudent(student.id);
+    setEditFormData({
+      name: student.name,
+      grade: student.grade,
+      attendance: student.attendance,
+      courses: [...student.courses]
+    });
+  };
+
+  const handleSaveClick = (id: number) => {
+    setStudents(students.map(student => 
+      student.id === id 
+        ? { ...student, ...editFormData }
+        : student
+    ));
+    setEditingStudent(null);
+  };
+
+  const handleDeleteStudent = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      setStudents(students.filter(student => student.id !== id));
+    }
+  };
+
+  const handleAddStudent = () => {
+    const newStudent = {
+      id: students.length + 1,
+      name: "New Student",
+      grade: "10th",
+      attendance: "100%",
+      courses: [""]
+    };
+    setStudents([...students, newStudent]);
+    handleEditClick(newStudent);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -93,7 +142,12 @@ const Index = () => {
         <main className="bg-white rounded-lg shadow p-6">
           {activeTab === 'dashboard' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Student Directory</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Student Directory</h2>
+                <Button onClick={handleAddStudent} className="bg-green-500 hover:bg-green-600">
+                  Add New Student
+                </Button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -102,22 +156,80 @@ const Index = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attendance</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Courses</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredStudents.map((student) => (
                       <tr key={student.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{student.grade}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{student.attendance}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingStudent === student.id ? (
+                            <Input
+                              value={editFormData.name}
+                              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                            />
+                          ) : (
+                            student.name
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingStudent === student.id ? (
+                            <Input
+                              value={editFormData.grade}
+                              onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })}
+                            />
+                          ) : (
+                            student.grade
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingStudent === student.id ? (
+                            <Input
+                              value={editFormData.attendance}
+                              onChange={(e) => setEditFormData({ ...editFormData, attendance: e.target.value })}
+                            />
+                          ) : (
+                            student.attendance
+                          )}
+                        </td>
                         <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {student.courses.map((course, index) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                {course}
-                              </span>
-                            ))}
-                          </div>
+                          {editingStudent === student.id ? (
+                            <Input
+                              value={editFormData.courses.join(", ")}
+                              onChange={(e) => setEditFormData({ ...editFormData, courses: e.target.value.split(", ") })}
+                              placeholder="Courses (comma-separated)"
+                            />
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {student.courses.map((course, index) => (
+                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                  {course}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingStudent === student.id ? (
+                            <Button onClick={() => handleSaveClick(student.id)} variant="outline" size="sm">
+                              <Save className="w-4 h-4 mr-1" />
+                              Save
+                            </Button>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Button onClick={() => handleEditClick(student)} variant="outline" size="sm">
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                onClick={() => handleDeleteStudent(student.id)} 
+                                variant="destructive"
+                                size="sm">
+                                <Trash className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
