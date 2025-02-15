@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Users, 
   BookOpen, 
@@ -10,16 +9,22 @@ import {
   Search,
   Edit,
   Save,
-  Trash
+  Trash,
+  Lock
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+const ADMIN_PASSWORD = "admin123"; // In a real app, this should be hashed and stored securely
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingStudent, setEditingStudent] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
     name: '',
     grade: '',
@@ -38,11 +43,51 @@ const Index = () => {
     { id: 2, title: "Sports Day", date: "2024-03-25", content: "Annual sports day celebration next month." },
   ]);
 
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedStudents = localStorage.getItem('students');
+    const savedAnnouncements = localStorage.getItem('announcements');
+    
+    if (savedStudents) {
+      setStudents(JSON.parse(savedStudents));
+    }
+    if (savedAnnouncements) {
+      setAnnouncements(JSON.parse(savedAnnouncements));
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('students', JSON.stringify(students));
+  }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('announcements', JSON.stringify(announcements));
+  }, [announcements]);
+
   const filteredStudents = students.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleLogin = () => {
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAdmin(true);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+  };
+
   const handleEditClick = (student: any) => {
+    if (!isAdmin) {
+      setShowPasswordModal(true);
+      return;
+    }
     setEditingStudent(student.id);
     setEditFormData({
       name: student.name,
@@ -62,12 +107,20 @@ const Index = () => {
   };
 
   const handleDeleteStudent = (id: number) => {
+    if (!isAdmin) {
+      setShowPasswordModal(true);
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this student?')) {
       setStudents(students.filter(student => student.id !== id));
     }
   };
 
   const handleAddStudent = () => {
+    if (!isAdmin) {
+      setShowPasswordModal(true);
+      return;
+    }
     const newStudent = {
       id: students.length + 1,
       name: "New Student",
@@ -81,6 +134,51 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-semibold mb-4">Admin Login Required</h2>
+            <Input
+              type="password"
+              placeholder="Enter admin password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              className="mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowPasswordModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleLogin}>
+                Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Status Bar */}
+      <div className="bg-blue-100 p-2 text-center">
+        {isAdmin ? (
+          <div className="flex items-center justify-center gap-2">
+            <Lock className="w-4 h-4 text-green-600" />
+            <span className="text-green-600">Admin Mode Active</span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <Lock className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-600">Viewing Mode</span>
+            <Button variant="outline" size="sm" onClick={() => setShowPasswordModal(true)}>
+              Login as Admin
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} bg-white border-r border-gray-200`}>
         <div className="flex items-center justify-between p-4 border-b">
@@ -144,7 +242,11 @@ const Index = () => {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Student Directory</h2>
-                <Button onClick={handleAddStudent} className="bg-green-500 hover:bg-green-600">
+                <Button 
+                  onClick={handleAddStudent} 
+                  className="bg-green-500 hover:bg-green-600"
+                  disabled={!isAdmin}
+                >
                   Add New Student
                 </Button>
               </div>
@@ -217,14 +319,21 @@ const Index = () => {
                             </Button>
                           ) : (
                             <div className="flex gap-2">
-                              <Button onClick={() => handleEditClick(student)} variant="outline" size="sm">
+                              <Button 
+                                onClick={() => handleEditClick(student)} 
+                                variant="outline" 
+                                size="sm"
+                                disabled={!isAdmin}
+                              >
                                 <Edit className="w-4 h-4 mr-1" />
                                 Edit
                               </Button>
                               <Button 
                                 onClick={() => handleDeleteStudent(student.id)} 
                                 variant="destructive"
-                                size="sm">
+                                size="sm"
+                                disabled={!isAdmin}
+                              >
                                 <Trash className="w-4 h-4 mr-1" />
                                 Delete
                               </Button>
