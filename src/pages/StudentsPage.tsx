@@ -13,12 +13,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+interface GradeEntry {
+  subject: string;
+  score: number;
+  date: string;
+}
+
 interface Student {
   id: string;
   name: string;
   grade: string;
   class: string;
   contact: string;
+  grades: GradeEntry[];
 }
 
 const StudentsPage = () => {
@@ -30,28 +37,44 @@ const StudentsPage = () => {
       name: "John Doe",
       grade: "10th",
       class: "A",
-      contact: "parent@example.com"
+      contact: "parent@example.com",
+      grades: [
+        { subject: "Mathematics", score: 85, date: "2024-02-15" },
+        { subject: "English", score: 92, date: "2024-02-15" }
+      ]
     },
     {
       id: "2",
       name: "Jane Smith",
       grade: "9th",
       class: "B",
-      contact: "parent2@example.com"
+      contact: "parent2@example.com",
+      grades: [
+        { subject: "Mathematics", score: 88, date: "2024-02-15" },
+        { subject: "English", score: 95, date: "2024-02-15" }
+      ]
     }
   ]);
+  
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newStudent, setNewStudent] = useState<Omit<Student, 'id'>>({
+  const [showGradeForm, setShowGradeForm] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [newStudent, setNewStudent] = useState<Omit<Student, 'id' | 'grades'>>({
     name: '',
     grade: '',
     class: '',
     contact: ''
   });
+  const [newGrade, setNewGrade] = useState<GradeEntry>({
+    subject: '',
+    score: 0,
+    date: new Date().toISOString().split('T')[0]
+  });
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     const id = (students.length + 1).toString();
-    setStudents([...students, { ...newStudent, id }]);
+    setStudents([...students, { ...newStudent, id, grades: [] }]);
     setNewStudent({ name: '', grade: '', class: '', contact: '' });
     setShowAddForm(false);
     toast({
@@ -66,6 +89,38 @@ const StudentsPage = () => {
       title: "Success",
       description: "Student removed successfully",
     });
+  };
+
+  const handleAddGrade = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudentId) return;
+
+    setStudents(students.map(student => {
+      if (student.id === selectedStudentId) {
+        return {
+          ...student,
+          grades: [...student.grades, newGrade]
+        };
+      }
+      return student;
+    }));
+
+    setNewGrade({
+      subject: '',
+      score: 0,
+      date: new Date().toISOString().split('T')[0]
+    });
+    setShowGradeForm(false);
+    setSelectedStudentId(null);
+    toast({
+      title: "Success",
+      description: "Grade added successfully",
+    });
+  };
+
+  const openGradeForm = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setShowGradeForm(true);
   };
 
   return (
@@ -126,6 +181,55 @@ const StudentsPage = () => {
         </div>
       )}
 
+      {showGradeForm && (
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl font-semibold mb-4">Add New Grade</h2>
+          <form onSubmit={handleAddGrade} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Subject</label>
+              <Input
+                value={newGrade.subject}
+                onChange={(e) => setNewGrade({ ...newGrade, subject: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Score</label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={newGrade.score}
+                onChange={(e) => setNewGrade({ ...newGrade, score: Number(e.target.value) })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <Input
+                type="date"
+                value={newGrade.date}
+                onChange={(e) => setNewGrade({ ...newGrade, date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="flex gap-4">
+              <Button type="submit">Save Grade</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowGradeForm(false);
+                  setSelectedStudentId(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow">
         <Table>
           <TableHeader>
@@ -134,6 +238,7 @@ const StudentsPage = () => {
               <TableHead>Grade</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Parent Contact</TableHead>
+              <TableHead>Average Score</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -145,12 +250,17 @@ const StudentsPage = () => {
                 <TableCell>{student.class}</TableCell>
                 <TableCell>{student.contact}</TableCell>
                 <TableCell>
+                  {student.grades.length > 0
+                    ? (student.grades.reduce((acc, grade) => acc + grade.score, 0) / student.grades.length).toFixed(1)
+                    : 'N/A'}
+                </TableCell>
+                <TableCell>
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      onClick={() => console.log('Edit student:', student.id)}
+                      onClick={() => openGradeForm(student.id)}
                     >
-                      Edit
+                      Add Grade
                     </Button>
                     <Button 
                       variant="destructive"
@@ -165,6 +275,32 @@ const StudentsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {students.map((student) => (
+        student.grades.length > 0 && (
+          <div key={`grades-${student.id}`} className="mt-8 bg-white p-6 rounded-lg shadow">
+            <h3 className="text-xl font-semibold mb-4">{student.name}'s Grades</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {student.grades.map((grade, index) => (
+                  <TableRow key={`${student.id}-grade-${index}`}>
+                    <TableCell>{grade.subject}</TableCell>
+                    <TableCell>{grade.score}</TableCell>
+                    <TableCell>{grade.date}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      ))}
     </div>
   );
 };
