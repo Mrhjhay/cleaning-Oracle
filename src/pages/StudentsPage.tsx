@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { ArrowLeft } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -71,6 +71,10 @@ const StudentsPage = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
+  };
+
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     const id = (students.length + 1).toString();
@@ -126,7 +130,18 @@ const StudentsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleBackToDashboard}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
+        </div>
         <Button onClick={() => setShowAddForm(true)}>Add New Student</Button>
       </div>
 
