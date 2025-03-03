@@ -1,6 +1,8 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -12,8 +14,23 @@ const ParentDashboard = () => {
     }
   }, [navigate]);
 
+  const handleBack = () => {
+    navigate(-1); // This will go back to the previous page in history
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      <div className="mb-6">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </Button>
+      </div>
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         Parent Dashboard
       </h1>
