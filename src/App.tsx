@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import StudentsPage from "./pages/StudentsPage";
 import NotFound from "./pages/NotFound";
 import CourseManagement from './pages/CourseManagement';
+import TeacherManagement from './pages/TeacherManagement';
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/courses" element={<CourseManagement />} />
+            <Route path="/teachers" element={<TeacherManagement />} />
             <Route path="/parent-dashboard" element={<ParentDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

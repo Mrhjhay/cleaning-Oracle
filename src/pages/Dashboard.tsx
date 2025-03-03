@@ -30,7 +30,7 @@ const Dashboard = () => {
         />
         <DashboardCard
           title="Teacher Management"
-          description="Manage teacher profiles and assignments"
+          description="Manage teacher assignments and tasks"
           link="/teachers"
         />
         <DashboardCard
